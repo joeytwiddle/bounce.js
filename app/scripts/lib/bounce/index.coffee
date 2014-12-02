@@ -7,7 +7,7 @@ ComponentClasses =
   skew: require "./components/skew"
 
 class Bounce
-  @FPS: 60
+  @FPS: 30
   @counter: 1
 
   components: null
@@ -56,6 +56,30 @@ class Bounce
 
     document.body.appendChild @styleElement
     this
+
+  applyTo: (elements, options = {}) ->
+    @define()
+    elements = [elements] unless elements.length
+    prefixes = @getPrefixes()
+
+    deferred = null
+    if window.jQuery and window.jQuery.Deferred
+      deferred = new window.jQuery.Deferred()
+
+    for element in elements
+      for prefix in prefixes.animation
+        css = [@name, "#{@duration}ms", "linear", "both"]
+        css.push("infinite") if options.loop
+        element.style["#{prefix}animation"] = css.join " "
+
+    unless options.loop
+      setTimeout (=>
+        @remove() if options.remove
+        options.onComplete?()
+        deferred.resolve() if deferred
+      ), @duration
+
+    deferred
 
   remove: ->
     @styleElement?.remove()
@@ -131,9 +155,10 @@ class Bounce
     style = document.createElement("dummy").style
 
     propertyLists = [
-      ["transform", "webkitTransform"],
+      ["transform", "webkitTransform"]
       ["animation", "webkitAnimation"]
     ]
+
     for propertyList in propertyLists
       propertyIsSupported = false
       for property in propertyList
@@ -142,12 +167,5 @@ class Bounce
       return false unless propertyIsSupported
 
     true
-
-  _unique: (list) ->
-    seen = {}
-    list.filter (i) ->
-      isUnique = not seen[i]
-      seen[i] = true
-      isUnique
 
 module.exports = Bounce
